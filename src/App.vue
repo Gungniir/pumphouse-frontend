@@ -45,11 +45,16 @@
 
 <script>
 
+import api from "@/api";
+
 export default {
   name: 'App',
 
   data: () => ({
     //
   }),
+  async mounted() {
+    console.log(await api.authLogin('gungniir', '12345'))
+  }
 };
 </script>
