@@ -21,6 +21,13 @@ async function doRequest(path, method, body = null) {
             return null
         }
 
+        console.log(response)
+
+        if (response.status === 422) {
+            console.error('Validation error')
+            return null
+        }
+
         return response
     } catch (e) {
         console.error('Failed to fetch api')
@@ -29,6 +36,12 @@ async function doRequest(path, method, body = null) {
 }
 
 const api = {
+    /**
+     * Войти в аккаунт
+     * @param login
+     * @param password
+     * @returns {Promise<null|boolean>}
+     */
     authLogin: async function(login, password) {
         const data = new FormData();
         data.append('login', login)
@@ -47,6 +60,8 @@ const api = {
         if (response.status === 200) {
             return true
         }
+
+        return null
     },
     authLogout: async function() {
         const response = await doRequest('/auth', 'post')
@@ -58,6 +73,8 @@ const api = {
         if (response.status === 200) {
             return true
         }
+
+        return null
     },
 }
 
