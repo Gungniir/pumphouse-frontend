@@ -20,14 +20,20 @@
       </v-col>
       <v-col cols="10">
         <v-row>
-          <v-col cols="6">
+          <v-col cols="8">
             <v-card height="250" :loading="!residentsDataLoaded">
               <v-card-text style="height: 100%">
                 <residents-chart ref="resident-chart"
-                    style="height: 100%; width: 100%"
-                    :chart-data="residentsData"
+                                 style="height: 100%; width: 100%"
+                                 :chart-data="residentsData"
                 />
               </v-card-text>
+            </v-card>
+          </v-col>
+          <v-col cols="4">
+            <v-card :loading="!residentsDataLoaded" class="fill-height d-flex flex-column">
+              <v-card-title>Всего подключено</v-card-title>
+              <v-card-text style="font-size: 42px" class="flex-grow-1 d-flex align-center justify-center">{{ residentsCount }}</v-card-text>
             </v-card>
           </v-col>
         </v-row>
@@ -51,6 +57,7 @@ export default {
   components: {ResidentsChart},
   data: () => ({
     residentsDataLoaded: false,
+    residentsCount: 0,
     residentsData: {
       labels: [],
       datasets: [
@@ -104,6 +111,8 @@ export default {
 
     this.$set(this.residentsData.datasets[0], 'data', data)
     this.$set(this.residentsData, 'labels', labels)
+
+    this.residentsCount = residents.data.length
 
     this.residentsDataLoaded = true
 
