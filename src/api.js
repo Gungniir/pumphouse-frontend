@@ -90,7 +90,35 @@ const api = {
         }
 
         return response.json()
-    }
+    },
+
+    periodsIndex: async function() {
+        const response = await doRequest('/periods', 'get')
+
+        if (response === null) {
+            return null
+        }
+
+        if (response.status === 401 || response.status === 403) {
+            return false
+        }
+
+        return response.json()
+    },
+
+    pumpMeterRecordsIndex: async function() {
+        const response = await doRequest('/pump-meter-records', 'get')
+
+        if (response === null) {
+            return null
+        }
+
+        if (response.status === 401 || response.status === 403) {
+            return false
+        }
+
+        return response.json()
+    },
 }
 
 export default api;

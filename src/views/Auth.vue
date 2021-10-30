@@ -35,7 +35,7 @@
                   :append-icon="passwordIcon"
                   :rules="[rules.required]"
                   :error="wrongError"
-                  :error-messages="wrongError ? 'Неверный логин или пароль' : false"
+                  :error-messages="wrongError ? 'Неверный логин или пароль' : ''"
                   ref="passwordField"
                   @click:append="showPassword = !showPassword"
                   @keyup.enter="process"
