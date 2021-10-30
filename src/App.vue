@@ -8,8 +8,6 @@
 
 <script>
 
-import api from "@/api";
-
 export default {
   name: 'App',
 
@@ -21,8 +19,5 @@ export default {
       return (this.$vuetify.theme.dark) ? 'dark' : 'light'
     }
   },
-  async mounted() {
-    console.log(await api.authLogin('admin', 'admin'))
-  }
 };
 </script>

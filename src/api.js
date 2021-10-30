@@ -13,6 +13,7 @@ async function doRequest(path, method, body = null) {
             headers: {
                 'Accept': 'application/json',
             },
+            credentials: 'include',
             body: body,
         });
 
@@ -76,6 +77,20 @@ const api = {
 
         return null
     },
+
+    residentsIndex: async function() {
+        const response = await doRequest('/residents', 'get')
+
+        if (response === null) {
+            return null
+        }
+
+        if (response.status === 401 || response.status === 403) {
+            return false
+        }
+
+        return response.json()
+    }
 }
 
 export default api;

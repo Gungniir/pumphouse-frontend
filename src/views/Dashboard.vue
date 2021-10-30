@@ -21,9 +21,12 @@
       <v-col cols="10">
         <v-row>
           <v-col cols="6">
-            <v-card height="250">
+            <v-card height="250" :loading="!residentsDataLoaded">
               <v-card-text style="height: 100%">
-                <residents-chart style="height: 100%; width: 100%"/>
+                <residents-chart ref="resident-chart"
+                    style="height: 100%; width: 100%"
+                    :chart-data="residentsData"
+                />
               </v-card-text>
             </v-card>
           </v-col>
@@ -41,10 +44,72 @@
 
 <script>
 import ResidentsChart from "@/components/ResidentsChart";
+import api from "@/api";
 
 export default {
   name: "Dashboard",
-  components: {ResidentsChart}
+  components: {ResidentsChart},
+  data: () => ({
+    residentsDataLoaded: false,
+    residentsData: {
+      labels: [],
+      datasets: [
+        {
+          label: 'Подключено дачников',
+          backgroundColor: '#599CC2CC',
+          barThickness: 8,
+          data: [],
+        },
+      ],
+    },
+    authError: false,
+    connectionError: false,
+  }),
+  async mounted() {
+    const residents = await api.residentsIndex();
+
+    if (residents === null) {
+      this.connectionError = true
+      return
+    }
+
+    if (residents === false) {
+      this.authError = true
+      return
+    }
+
+    const nowMonth = (new Date()).getMonth()
+    const nowYear = (new Date()).getFullYear()
+    const data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    const labels = ['Январь ', 'Февраль ', 'Март ', 'Апрель ', 'Май ', 'Июнь ', 'Июль ', 'Август ', 'Сентябрь ',
+      'Октябрь ', 'Ноябрь ', 'Декабрь ']
+
+    for (let i = 0; i < 12; i++) {
+      if (i > nowMonth) {
+        labels[i] += nowYear - 1
+      } else {
+        labels[i] += nowYear
+      }
+    }
+
+    for (const {start_date} of residents.data) {
+      const date = new Date(start_date)
+
+      if (date.getFullYear() === nowYear && date.getMonth() <= nowMonth) {
+        data[date.getMonth()]++
+      } else if (date.getFullYear() === nowYear - 1 && date.getMonth() > nowMonth) {
+        data[date.getMonth()]++
+      }
+    }
+
+    this.$set(this.residentsData.datasets[0], 'data', data)
+    this.$set(this.residentsData, 'labels', labels)
+
+    this.residentsDataLoaded = true
+
+    console.log(this.$refs["resident-chart"].$data._chart.update());
+  }
+
 }
 </script>
 
