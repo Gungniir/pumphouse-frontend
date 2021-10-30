@@ -19,7 +19,15 @@
         </v-btn>
       </v-col>
       <v-col cols="10">
-
+        <v-row>
+          <v-col cols="6">
+            <v-card height="250">
+              <v-card-text style="height: 100%">
+                <residents-chart style="height: 100%; width: 100%"/>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
       </v-col>
       <v-col cols="1">
         <div class="d-flex flex-column align-center">
@@ -32,8 +40,11 @@
 </template>
 
 <script>
+import ResidentsChart from "@/components/ResidentsChart";
+
 export default {
-  name: "Dashboard"
+  name: "Dashboard",
+  components: {ResidentsChart}
 }
 </script>
 
