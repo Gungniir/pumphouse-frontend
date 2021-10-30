@@ -41,13 +41,20 @@
         </v-row>
         <v-row>
           <v-col cols="5">
-            <v-card height="300" :loading="!recordsDataLoaded" class="d-flex flex-column">
+            <v-card height="250" :loading="!recordsDataLoaded" class="d-flex flex-column">
               <v-card-title>Всего потрачено</v-card-title>
               <v-card-text style="font-size: 42px" class="flex-grow-1 d-flex align-center justify-center">{{ totalConsumed }}</v-card-text>
             </v-card>
           </v-col>
           <v-col cols="7">
-
+            <v-card height="250" :loading="!residentsDataLoaded">
+              <v-card-text style="height: 100%">
+                <water-chart ref="water-chart"
+                                 style="height: 100%; width: 100%"
+                                 :chart-data="waterData"
+                />
+              </v-card-text>
+            </v-card>
           </v-col>
         </v-row>
       </v-col>
@@ -62,12 +69,13 @@
 </template>
 
 <script>
-import ResidentsChart from "@/components/ResidentsChart";
 import api from "@/api";
+import WaterChart from "@/components/WaterChart";
+import ResidentsChart from "@/components/ResidentsChart";
 
 export default {
   name: "Dashboard",
-  components: {ResidentsChart},
+  components: {ResidentsChart, WaterChart},
   data: () => ({
     residentsDataLoaded: false,
     residentsCount: 0,
@@ -84,6 +92,16 @@ export default {
     },
     recordsDataLoaded: false,
     totalConsumed: 0,
+    waterData: {
+      labels: [],
+      datasets: [
+        {
+          label: 'Расход воды (в куб. м)',
+          backgroundColor: '#ED81A1',
+          data: [],
+        },
+      ],
+    },
     authError: false,
     connectionError: false,
   }),
@@ -141,19 +159,61 @@ export default {
     },
     periods: async function() {
       const records = await api.pumpMeterRecordsIndex()
+      const periods = await api.periodsIndex()
 
-      if (records === null) {
+      if (records === null || periods === null) {
         this.connectionError = true
         return
       }
 
-      if (records === false) {
+      if (records === false || periods === false) {
         this.authError = true
         return
       }
 
+      const nowMonth = (new Date()).getMonth()
+      const nowYear = (new Date()).getFullYear()
+      let data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      let labels = ['Январь ', 'Февраль ', 'Март ', 'Апрель ', 'Май ', 'Июнь ', 'Июль ', 'Август ', 'Сентябрь ',
+        'Октябрь ', 'Ноябрь ', 'Декабрь ']
+
+      for (let i = 0; i < 12; i++) {
+        if (i > nowMonth) {
+          labels[i] += nowYear - 1
+        } else {
+          labels[i] += nowYear
+        }
+      }
+
+      const periodsWithRecords = periods.data.map(item => ({
+        ...item,
+        record: records.data.find(({period_id}) => period_id === item.id)
+      }))
+
+      console.log(periodsWithRecords)
+
+      for (const {begin_date, record} of periodsWithRecords) {
+        const date = new Date(begin_date)
+
+        if (date.getFullYear() === nowYear && date.getMonth() <= nowMonth) {
+          data[date.getMonth()] += record.amount_volume
+        } else if (date.getFullYear() === nowYear - 1 && date.getMonth() > nowMonth) {
+          data[date.getMonth()] += record.amount_volume
+        }
+      }
+
+      // Записываем сначала прошедший год, а затем настоящий
+      labels = labels.slice(nowMonth + 1).concat(labels.slice(0, nowMonth + 1))
+      data = data.slice(nowMonth + 1).concat(data.slice(0, nowMonth + 1))
+
+      this.$set(this.waterData.datasets[0], 'data', data)
+      this.$set(this.waterData, 'labels', labels)
+
       this.totalConsumed = records.data.reduce((a, {amount_volume}) => a + Number(amount_volume), 0).toFixed(2)
       this.recordsDataLoaded = true
+
+      // Обновляем график
+      this.$refs["water-chart"].$data._chart.update();
     }
   },
   mounted() {
