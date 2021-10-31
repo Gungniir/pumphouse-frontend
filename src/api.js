@@ -36,6 +36,19 @@ async function doRequest(path, method, body = null) {
     }
 }
 
+/**
+ *
+ * @param {Date} date
+ * @returns {string}
+ */
+function formatDate(date) {
+    function leadingZero(a) {
+        return a >= 10 ? `${a}` : `0${a}`
+    }
+
+    return `${date.getUTCFullYear()}.${leadingZero(date.getUTCMonth()+1)}.${leadingZero(date.getUTCDate())} ${leadingZero(date.getUTCHours())}:${leadingZero(date.getUTCMinutes())}:${leadingZero(date.getUTCSeconds())}`
+}
+
 const api = {
     /**
      * Войти в аккаунт
@@ -90,6 +103,28 @@ const api = {
         }
 
         return response.json()
+    },
+    residentsStore: async function(fio, area) {
+        const data = new FormData()
+        data.append('fio', fio)
+        data.append('area', area)
+        data.append('start_date', formatDate(new Date()))
+
+        const response = await doRequest('/residents', 'post', data)
+
+        if (response === null) {
+            return null
+        }
+
+        if (response.status === 201) {
+            return true
+        }
+
+        if (response.status === 401 || response.status === 403) {
+            return false
+        }
+
+        return null
     },
 
     periodsIndex: async function() {

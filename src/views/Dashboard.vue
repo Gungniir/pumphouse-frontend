@@ -113,6 +113,7 @@
                     color="green"
                     v-on="on"
                     v-bind="attrs"
+                    @click="residentDialog = true"
                 >
                   <v-icon>mdi-account-plus</v-icon>
                 </v-btn>
@@ -140,6 +141,46 @@
         </div>
       </v-col>
     </v-row>
+    <v-dialog
+      v-model="residentDialog"
+      max-width="400"
+    >
+      <v-card :loading="residentDialogLoading">
+        <v-btn
+          absolute
+          top
+          right
+          icon
+          @click="residentDialog = false"
+          :disabled="residentDialogLoading"
+        >
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+        <v-card-title class="d-flex align-center justify-center mb-10 pt-10">Новый дачник</v-card-title>
+        <v-card-text class="pb-10">
+          <v-form v-model="residentDialogValid" ref="resident-form">
+            <v-text-field
+                label="ФИО"
+                outlined
+                placeholder="Иванов Иван Иванович"
+                v-model="residentDialogFIO"
+                :disabled="residentDialogLoading"
+                :rules="[rules.required]"
+            ></v-text-field>
+            <v-text-field
+                label="Площадь огорода (в сотках)"
+                outlined
+                placeholder="30.2"
+                v-model="residentDialogArea"
+                type="number"
+                :disabled="residentDialogLoading"
+                :rules="[rules.required, rules.greaterThanZero]"
+            ></v-text-field>
+          </v-form>
+          <v-btn large block color="accent" @click="addResident" :disabled="residentDialogLoading || !residentDialogValid">Добавить</v-btn>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -153,6 +194,11 @@ export default {
   components: {ResidentsChart, WaterChart},
   data: () => ({
     fab: false,
+    residentDialog: false,
+    residentDialogFIO: "",
+    residentDialogArea: 0,
+    residentDialogLoading: false,
+    residentDialogValid: false,
     residentsDataLoaded: false,
     residentsCount: 0,
     residentsData: {
@@ -192,6 +238,11 @@ export default {
     },
     authError: false,
     connectionError: false,
+    rules: {
+      required: value => !!value || 'Обязательное поле',
+      greaterThanZero: value => value > 0 || 'Площадь должна быть положительной',
+      noCommas: value => value.indexOf(',') === -1 || 'Используйте точку, а не запятую',
+    }
   }),
   methods: {
     residents: async function () {
@@ -357,8 +408,6 @@ export default {
         }
       }
 
-      console.log(labels, data)
-
       // Записываем сначала прошедший год, а затем настоящий
       labels = labels.slice(nowMonth + 1).concat(labels.slice(0, nowMonth + 1))
       data = data.slice(nowMonth + 1).concat(data.slice(0, nowMonth + 1))
@@ -370,6 +419,26 @@ export default {
 
       // Обновляем график
       this.$refs["tariff-chart"].$data._chart.update();
+    },
+    addResident: async function () {
+      this.residentDialogLoading = true
+
+      const response = await api.residentsStore(this.residentDialogFIO, this.residentDialogArea)
+
+      if (response === null) {
+        this.connectionError = true
+      }
+      else if (response === false) {
+        this.authError = true
+      }
+      else {
+        this.residentsDataLoaded = false
+        this.residents()
+      }
+
+      this.$refs["resident-form"].reset()
+      this.residentDialogLoading = false
+      this.residentDialog = false
     }
   },
   mounted() {
