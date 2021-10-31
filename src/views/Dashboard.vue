@@ -60,21 +60,21 @@
           </v-col>
         </v-row>
         <v-row class="mb-4">
-          <v-col cols="5">
-            <v-card height="250" :loading="!tariffsDataLoaded" class="d-flex flex-column">
-              <v-card-title>Текущий тариф</v-card-title>
-              <v-card-text class="flex-grow-1 d-flex align-center justify-center">
-                <span style="font-size: 42px">{{ nowTariff }}</span><span class="ml-1">руб/куб. м</span>
-              </v-card-text>
-            </v-card>
-          </v-col>
-          <v-col cols="7">
+          <v-col cols="9">
             <v-card height="250" :loading="!tariffsDataLoaded">
               <v-card-text style="height: 100%">
                 <water-chart ref="tariff-chart"
                              style="height: 100%; width: 100%"
                              :chart-data="tariffsData"
                 />
+              </v-card-text>
+            </v-card>
+          </v-col>
+          <v-col cols="3">
+            <v-card height="250" :loading="!tariffsDataLoaded" class="d-flex flex-column">
+              <v-card-title>Текущий тариф</v-card-title>
+              <v-card-text class="flex-grow-1 d-flex align-center justify-center">
+                <span style="font-size: 42px">{{ nowTariff }}</span><span class="ml-1">руб/куб. м</span>
               </v-card-text>
             </v-card>
           </v-col>
