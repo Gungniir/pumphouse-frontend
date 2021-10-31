@@ -131,6 +131,7 @@
                     color="indigo"
                     v-bind="attrs"
                     v-on="on"
+                    @click="calculateDialog = true"
                 >
                   <v-icon>mdi-text-box-plus</v-icon>
                 </v-btn>
@@ -142,17 +143,17 @@
       </v-col>
     </v-row>
     <v-dialog
-      v-model="residentDialog"
-      max-width="400"
+        v-model="residentDialog"
+        max-width="400"
     >
       <v-card :loading="residentDialogLoading">
         <v-btn
-          absolute
-          top
-          right
-          icon
-          @click="residentDialog = false"
-          :disabled="residentDialogLoading"
+            absolute
+            top
+            right
+            icon
+            @click="residentDialog = false"
+            :disabled="residentDialogLoading"
         >
           <v-icon>mdi-close</v-icon>
         </v-btn>
@@ -177,7 +178,50 @@
                 :rules="[rules.required, rules.greaterThanZero]"
             ></v-text-field>
           </v-form>
-          <v-btn large block color="accent" @click="addResident" :disabled="residentDialogLoading || !residentDialogValid">Добавить</v-btn>
+          <v-btn large block color="accent" @click="addResident"
+                 :disabled="residentDialogLoading || !residentDialogValid">Добавить
+          </v-btn>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+    <v-dialog
+        v-model="calculateDialog"
+        max-width="400"
+    >
+      <v-card :loading="calculateDialogLoading || !tariffsDataLoaded">
+        <v-btn
+            absolute
+            top
+            right
+            icon
+            @click="calculateDialog = false"
+        >
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+        <v-card-title class="d-flex align-center justify-center mb-10 pt-10">Генерация чеков</v-card-title>
+        <v-card-text class="pb-10">
+          <v-form v-model="calculateDialogValid" ref="calculate-form">
+            <v-text-field
+                label="Тариф на текущий месяц"
+                outlined
+                placeholder="44.2"
+                v-model="calculateDialogCost"
+                :disabled="calculateDialogLoading || !tariffsDataLoaded"
+                :rules="[rules.required, rules.greaterThanZero]"
+            ></v-text-field>
+            <v-text-field
+                label="Показания счётчика"
+                outlined
+                placeholder="70.8"
+                v-model="calculateDialogRecord"
+                type="number"
+                :disabled="calculateDialogLoading || !tariffsDataLoaded"
+                :rules="[rules.required, rules.greaterThanZero]"
+            ></v-text-field>
+          </v-form>
+          <v-btn large block color="accent" @click="calculate"
+                 :disabled="calculateDialogLoading || !tariffsDataLoaded || !calculateDialogValid">Сгенерировать
+          </v-btn>
         </v-card-text>
       </v-card>
     </v-dialog>
@@ -199,6 +243,11 @@ export default {
     residentDialogArea: 0,
     residentDialogLoading: false,
     residentDialogValid: false,
+    calculateDialog: false,
+    calculateDialogCost: 0,
+    calculateDialogRecord: 0,
+    calculateDialogLoading: false,
+    calculateDialogValid: false,
     residentsDataLoaded: false,
     residentsCount: 0,
     residentsData: {
@@ -241,7 +290,6 @@ export default {
     rules: {
       required: value => !!value || 'Обязательное поле',
       greaterThanZero: value => value > 0 || 'Площадь должна быть положительной',
-      noCommas: value => value.indexOf(',') === -1 || 'Используйте точку, а не запятую',
     }
   }),
   methods: {
@@ -297,16 +345,16 @@ export default {
       this.$refs["resident-chart"].$data._chart.update();
     },
     periods: async function () {
-      const records = await api.pumpMeterRecordsIndex()
-      const periods = await api.periodsIndex()
-
-      if (records === null || periods === null) {
-        this.connectionError = true
-        return
-      }
-
-      if (records === false || periods === false) {
-        this.authError = true
+      let records, periods
+      try {
+        records = await api.recordsIndex()
+        periods = await api.periodsIndex()
+      } catch (e) {
+        if (e.name === 'AuthError') {
+          this.authError = true
+        } else if (e.name === 'ConnectionError') {
+          this.connectionError = true
+        }
         return
       }
 
@@ -324,18 +372,25 @@ export default {
         }
       }
 
+      /**
+       * @type {({id: Number, begin_date: string, end_date: string, record: {id: Number, period_id: Number, amount_volume: Number}|undefined})[]}
+       */
       const periodsWithRecords = periods.data.map(item => ({
         ...item,
         record: records.data.find(({period_id}) => period_id === item.id)
       }))
 
       for (const {begin_date, record} of periodsWithRecords) {
+        if (record === undefined) {
+          continue
+        }
+
         const date = new Date(begin_date)
 
         if (date.getFullYear() === nowYear && date.getMonth() <= nowMonth) {
-          data[date.getMonth()] += record.amount_volume
+          data[date.getMonth()] = record.amount_volume
         } else if (date.getFullYear() === nowYear - 1 && date.getMonth() > nowMonth) {
-          data[date.getMonth()] += record.amount_volume
+          data[date.getMonth()] = record.amount_volume
         }
       }
 
@@ -353,15 +408,15 @@ export default {
       this.$refs["water-chart"].$data._chart.update();
     },
     tariffs: async function () {
-      const periods = await api.periodsIndex()
-
-      if (periods === null) {
-        this.connectionError = true
-        return
-      }
-
-      if (periods === false) {
-        this.authError = true
+      let periods
+      try {
+        periods = await api.periodsIndex()
+      } catch (e) {
+        if (e.name === 'AuthError') {
+          this.authError = true
+        } else if (e.name === 'ConnectionError') {
+          this.connectionError = true
+        }
         return
       }
 
@@ -379,20 +434,23 @@ export default {
         }
       }
 
-      for (const period of periods.data) {
-        const tariff = await api.tariffIndex(period.id)
-
-        if (tariff === null) {
-          this.connectionError = true
+      for (const period of periods.data) { // TODO: Переписать на асинхронную обработку
+        let tariff
+        try {
+          tariff = await api.tariffsIndex(period.id)
+        } catch (e) {
+          if (e.name === 'AuthError') {
+            this.authError = true
+          } else if (e.name === 'ConnectionError') {
+            this.connectionError = true
+          } else if (e.name === 'NotFoundError') {
+            period.tariff = {cost: 0}
+            continue
+          }
           return
         }
 
-        if (tariff === false) {
-          this.authError = true
-          return
-        }
-
-        period.tariff = tariff === undefined ? {cost: 0} : tariff.data
+        period.tariff = tariff.data
       }
 
       for (const {begin_date, tariff} of periods.data) {
@@ -419,6 +477,20 @@ export default {
 
       // Обновляем график
       this.$refs["tariff-chart"].$data._chart.update();
+
+      if (this.nowTariff === 0) {
+        // Берём тариф за предыдущий период
+        try {
+          const period = await api.periodsViewOrStore(nowYear, nowMonth) // nowMonth Хранит месяц в Java формате (т.е. 0..11), а сервер - в человеческом
+          const tariff = await api.tariffsIndex(period.data.id)
+          this.calculateDialogCost = tariff.data.cost
+        } catch (e) {
+          console.error(e)
+          console.warn("Не удалось получить цену на воду за предыдущий период")
+        }
+      } else {
+        this.calculateDialogCost = this.nowTariff
+      }
     },
     addResident: async function () {
       this.residentDialogLoading = true
@@ -427,11 +499,9 @@ export default {
 
       if (response === null) {
         this.connectionError = true
-      }
-      else if (response === false) {
+      } else if (response === false) {
         this.authError = true
-      }
-      else {
+      } else {
         this.residentsDataLoaded = false
         this.residents()
       }
@@ -439,7 +509,113 @@ export default {
       this.$refs["resident-form"].reset()
       this.residentDialogLoading = false
       this.residentDialog = false
-    }
+    },
+    calculate: async function () {
+      this.calculateDialogLoading = true
+
+      // Получаем или создаём период
+      let period
+      try {
+        period = await api.periodsViewOrStore((new Date()).getFullYear(), (new Date()).getMonth() + 1)
+      } catch (e) {
+        if (e.name === 'AuthError') {
+          this.authError = true
+        } else if (e.name === 'ConnectionError') {
+          this.connectionError = true
+        }
+        this.residentDialogLoading = false
+        this.residentDialog = false
+        return
+      }
+
+      console.log('###tariff###')
+
+      // Устанавливаем тариф
+      try {
+        // Получаем текущий тариф
+        let tariff
+        try {
+          tariff = await api.tariffsIndex(period.data.id)
+
+          // Тариф есть. Если он отличается, нужно изменить
+          if (Number(tariff.data.cost).toFixed(2) !== Number(this.calculateDialogCost).toFixed(2)) {
+            await api.tariffsUpdate(tariff.data.id, Number(this.calculateDialogCost))
+          }
+        } catch (e) {
+          if (e.name !== 'NotFoundError') {
+            // noinspection ExceptionCaughtLocallyJS
+            throw e
+          }
+          // Тарифа нет, нужно создать
+          await api.tariffsStore(period.data.id, Number(this.calculateDialogCost))
+        }
+      } catch (e) {
+        console.error(e)
+        if (e.name === 'AuthError') {
+          this.authError = true
+        } else if (e.name === 'ConnectionError') {
+          this.connectionError = true
+        }
+        this.residentDialogLoading = false
+        this.residentDialog = false
+        return
+      }
+
+      console.log('###records###')
+
+      // Устанавливаем record
+      try {
+        // Получаем текущий Record
+        let record
+        try {
+          record = await api.recordsIndexPeriod(period.data.id)
+          console.log(record)
+
+          // Record есть. Если он отличается, нужно изменить
+          if (Number(record.data.amount_volume).toFixed(2) !== Number(this.calculateDialogRecord).toFixed(2)) {
+            await api.recordsUpdate(period.data.id, record.data.id, Number(this.calculateDialogRecord))
+          }
+        } catch (e) {
+          if (e.name !== 'NotFoundError') {
+            // noinspection ExceptionCaughtLocallyJS
+            throw e
+          }
+          // Record нет, нужно создать
+          await api.recordsStore(period.data.id, Number(this.calculateDialogRecord))
+        }
+      } catch (e) {
+        if (e.name === 'AuthError') {
+          this.authError = true
+        } else if (e.name === 'ConnectionError') {
+          this.connectionError = true
+        }
+        console.error(e)
+        this.residentDialogLoading = false
+        this.residentDialog = false
+        return
+      }
+
+      // Запускаем расчет
+      // todo: обработка н=конфилката
+      console.log('###calculating###')
+      try {
+        await api.periodsCalculate(period.data.id)
+      } catch (e) {
+        if (e.name === 'AuthError') {
+          this.authError = true
+        } else if (e.name === 'ConnectionError') {
+          this.connectionError = true
+        }
+        console.error(e)
+        this.residentDialogLoading = false
+        this.residentDialog = false
+        return
+      }
+      console.log('###doning###')
+
+      this.residentDialogLoading = false
+      this.residentDialog = false
+    },
   },
   mounted() {
     this.residents()
