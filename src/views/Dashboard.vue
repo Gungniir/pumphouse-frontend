@@ -1,6 +1,6 @@
 <template>
   <v-container fluid class="fill-height">
-    <v-row class="fill-height">
+    <v-row class="fill-height overflow-hidden">
       <v-col cols="1" class="d-flex flex-column align-center">
         <div style="width: 100%;">
           <v-img
@@ -59,12 +59,12 @@
             </v-card>
           </v-col>
         </v-row>
-        <v-row>
+        <v-row class="mb-4">
           <v-col cols="5">
             <v-card height="250" :loading="!tariffsDataLoaded" class="d-flex flex-column">
               <v-card-title>Текущий тариф</v-card-title>
               <v-card-text class="flex-grow-1 d-flex align-center justify-center">
-                <span style="font-size: 42px">{{ nowTariff}}</span><span class="ml-1">руб/куб. м</span>
+                <span style="font-size: 42px">{{ nowTariff }}</span><span class="ml-1">руб/куб. м</span>
               </v-card-text>
             </v-card>
           </v-col>
@@ -81,9 +81,62 @@
         </v-row>
       </v-col>
       <v-col cols="1">
-        <div class="d-flex flex-column align-center">
+        <div class="d-flex flex-column align-center fill-height">
           <v-icon x-large color="accent">mdi-account-circle</v-icon>
           <span style="font-size: 13px">Администратор</span>
+          <v-speed-dial
+              v-model="fab"
+              fixed
+              bottom
+              right
+          >
+            <template v-slot:activator>
+              <v-btn
+                  v-model="fab"
+                  color="accent"
+                  fab
+              >
+                <v-icon v-if="fab">
+                  mdi-close
+                </v-icon>
+                <v-icon v-else>
+                  mdi-plus
+                </v-icon>
+              </v-btn>
+            </template>
+            <v-tooltip left>
+              <template #activator="{attrs, on}">
+                <v-btn
+                    fab
+                    dark
+                    small
+                    color="green"
+                    v-on="on"
+                    v-bind="attrs"
+                >
+                  <v-icon>mdi-account-plus</v-icon>
+                </v-btn>
+              </template>
+              <span>Добавить дачника</span>
+            </v-tooltip>
+            <v-tooltip
+                left
+            >
+              <template #activator="{attrs, on}">
+                <v-btn
+                    fab
+                    dark
+                    small
+                    color="indigo"
+                    v-bind="attrs"
+                    v-on="on"
+                >
+                  <v-icon>mdi-text-box-plus</v-icon>
+                </v-btn>
+              </template>
+              <span>Рассчитать чеки</span>
+            </v-tooltip>
+          </v-speed-dial>
         </div>
       </v-col>
     </v-row>
@@ -99,6 +152,7 @@ export default {
   name: "Dashboard",
   components: {ResidentsChart, WaterChart},
   data: () => ({
+    fab: false,
     residentsDataLoaded: false,
     residentsCount: 0,
     residentsData: {
