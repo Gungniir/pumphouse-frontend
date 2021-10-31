@@ -119,6 +119,24 @@ const api = {
 
         return response.json()
     },
+
+    tariffIndex: async function(periodID) {
+        const response = await doRequest(`/periods/${periodID}/tariffs`, 'get')
+
+        if (response === null) {
+            return null
+        }
+
+        if (response.status === 401 || response.status === 403) {
+            return false
+        }
+
+        if (response.status === 404) {
+            return undefined
+        }
+
+        return response.json()
+    },
 }
 
 export default api;

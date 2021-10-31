@@ -43,15 +43,37 @@
           <v-col cols="5">
             <v-card height="250" :loading="!recordsDataLoaded" class="d-flex flex-column">
               <v-card-title>Всего потрачено</v-card-title>
-              <v-card-text style="font-size: 42px" class="flex-grow-1 d-flex align-center justify-center">{{ totalConsumed }}</v-card-text>
+              <v-card-text class="flex-grow-1 d-flex align-center justify-center">
+                <span style="font-size: 42px">{{ totalConsumed }}</span><span class="ml-1">куб. м</span>
+              </v-card-text>
             </v-card>
           </v-col>
           <v-col cols="7">
             <v-card height="250" :loading="!residentsDataLoaded">
               <v-card-text style="height: 100%">
                 <water-chart ref="water-chart"
-                                 style="height: 100%; width: 100%"
-                                 :chart-data="waterData"
+                             style="height: 100%; width: 100%"
+                             :chart-data="waterData"
+                />
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="5">
+            <v-card height="250" :loading="!tariffsDataLoaded" class="d-flex flex-column">
+              <v-card-title>Текущий тариф</v-card-title>
+              <v-card-text class="flex-grow-1 d-flex align-center justify-center">
+                <span style="font-size: 42px">{{ nowTariff}}</span><span class="ml-1">руб/куб. м</span>
+              </v-card-text>
+            </v-card>
+          </v-col>
+          <v-col cols="7">
+            <v-card height="250" :loading="!tariffsDataLoaded">
+              <v-card-text style="height: 100%">
+                <water-chart ref="tariff-chart"
+                             style="height: 100%; width: 100%"
+                             :chart-data="tariffsData"
                 />
               </v-card-text>
             </v-card>
@@ -98,6 +120,18 @@ export default {
         {
           label: 'Расход воды (в куб. м)',
           backgroundColor: '#ED81A1',
+          data: [],
+        },
+      ],
+    },
+    tariffsDataLoaded: false,
+    nowTariff: 0,
+    tariffsData: {
+      labels: [],
+      datasets: [
+        {
+          label: 'Стоимость воды',
+          backgroundColor: '#599CC2CC',
           data: [],
         },
       ],
@@ -157,7 +191,7 @@ export default {
       // Обновляем график
       this.$refs["resident-chart"].$data._chart.update();
     },
-    periods: async function() {
+    periods: async function () {
       const records = await api.pumpMeterRecordsIndex()
       const periods = await api.periodsIndex()
 
@@ -190,8 +224,6 @@ export default {
         record: records.data.find(({period_id}) => period_id === item.id)
       }))
 
-      console.log(periodsWithRecords)
-
       for (const {begin_date, record} of periodsWithRecords) {
         const date = new Date(begin_date)
 
@@ -214,11 +246,82 @@ export default {
 
       // Обновляем график
       this.$refs["water-chart"].$data._chart.update();
+    },
+    tariffs: async function () {
+      const periods = await api.periodsIndex()
+
+      if (periods === null) {
+        this.connectionError = true
+        return
+      }
+
+      if (periods === false) {
+        this.authError = true
+        return
+      }
+
+      const nowMonth = (new Date()).getMonth()
+      const nowYear = (new Date()).getFullYear()
+      let data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      let labels = ['Январь ', 'Февраль ', 'Март ', 'Апрель ', 'Май ', 'Июнь ', 'Июль ', 'Август ', 'Сентябрь ',
+        'Октябрь ', 'Ноябрь ', 'Декабрь ']
+
+      for (let i = 0; i < 12; i++) {
+        if (i > nowMonth) {
+          labels[i] += nowYear - 1
+        } else {
+          labels[i] += nowYear
+        }
+      }
+
+      for (const period of periods.data) {
+        const tariff = await api.tariffIndex(period.id)
+
+        if (tariff === null) {
+          this.connectionError = true
+          return
+        }
+
+        if (tariff === false) {
+          this.authError = true
+          return
+        }
+
+        period.tariff = tariff === undefined ? {cost: 0} : tariff.data
+      }
+
+      for (const {begin_date, tariff} of periods.data) {
+        const date = new Date(begin_date)
+
+        if (date.getFullYear() === nowYear && date.getMonth() === nowMonth) {
+          this.nowTariff = tariff.cost
+        }
+        if (date.getFullYear() === nowYear && date.getMonth() <= nowMonth) {
+          data[date.getMonth()] = tariff ? Number(tariff.cost) : 0
+        } else if (date.getFullYear() === nowYear - 1 && date.getMonth() > nowMonth) {
+          data[date.getMonth()] = tariff ? Number(tariff.cost) : 0
+        }
+      }
+
+      console.log(labels, data)
+
+      // Записываем сначала прошедший год, а затем настоящий
+      labels = labels.slice(nowMonth + 1).concat(labels.slice(0, nowMonth + 1))
+      data = data.slice(nowMonth + 1).concat(data.slice(0, nowMonth + 1))
+
+      this.$set(this.tariffsData.datasets[0], 'data', data)
+      this.$set(this.tariffsData, 'labels', labels)
+
+      this.tariffsDataLoaded = true
+
+      // Обновляем график
+      this.$refs["tariff-chart"].$data._chart.update();
     }
   },
   mounted() {
     this.residents()
     this.periods()
+    this.tariffs()
   }
 
 }
