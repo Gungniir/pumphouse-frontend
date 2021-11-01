@@ -19,6 +19,11 @@
         </v-btn>
       </v-col>
       <v-col cols="10">
+        <v-alert color="error" v-if="connectionError">Не удалось подключиться к серверу. Обновите страницу.</v-alert>
+        <v-alert color="error" class="d-flex justify-space-between" v-if="authError">
+            Вы не авторизованы
+            <v-btn color="accent" to="/auth">Войти</v-btn>
+        </v-alert>
         <v-row>
           <v-col cols="8">
             <v-card height="250" :loading="!residentsDataLoaded">
