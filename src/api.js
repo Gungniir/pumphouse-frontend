@@ -546,6 +546,49 @@ const api = {
 
         return true
     },
+
+    /**
+     * Получить все выпущенные чеки
+     *
+     * @throws ConnectionError|AuthError
+     * @returns {Promise<{id: Number, resident_id: Number, period_id: Number, amount_rub: Number}[]>}
+     */
+    billsIndex: async function() {
+        const response = await doRequest('/bills', 'get')
+
+        if (response === null) {
+            throw new ConnectionError()
+        }
+
+        if (response.statusCode === 401 || response.statusCode === 403) {
+            throw new AuthError()
+        }
+
+        return await response.json()
+    },
+    /**
+     * Получить все выпущенные чеки
+     *
+     * @throws ConnectionError|AuthError|NotFoundError
+     * @returns {Promise<{id: Number, resident_id: Number, period_id: Number, amount_rub: Number}[]>}
+     */
+    billsIndexPeriod: async function(periodID) {
+        const response = await doRequest(`/periods/${periodID}/bills`, 'get')
+
+        if (response === null) {
+            throw new ConnectionError()
+        }
+
+        if (response.statusCode === 401 || response.statusCode === 403) {
+            throw new AuthError()
+        }
+
+        if (response.statusCode === 404) {
+            throw new NotFoundError()
+        }
+
+        return (await response.json()).data
+    },
 }
 
 export default api;

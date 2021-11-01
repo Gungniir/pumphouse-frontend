@@ -188,7 +188,7 @@
         v-model="calculateDialog"
         max-width="400"
     >
-      <v-card :loading="calculateDialogLoading || !tariffsDataLoaded">
+      <v-card :loading="calculateDialogLoadingFull">
         <v-btn
             absolute
             top
@@ -200,6 +200,7 @@
         </v-btn>
         <v-card-title class="d-flex align-center justify-center mb-10 pt-10">Генерация чеков</v-card-title>
         <v-card-text class="pb-10">
+          <v-alert color="error" v-if="billsDataLoaded && billsAreGeneratedForCurrentPeriod">Чеки на текущий период уже сгенерированы. Чтобы продолжить, сначала удалите их.</v-alert>
           <v-form v-model="calculateDialogValid" ref="calculate-form">
             <v-text-field
                 class="mb-2"
@@ -207,7 +208,7 @@
                 outlined
                 placeholder="44.2"
                 v-model="calculateDialogCost"
-                :disabled="calculateDialogLoading || !tariffsDataLoaded"
+                :disabled="calculateDialogDisabled"
                 :rules="[rules.required, rules.greaterThanZero]"
                 @input="calculateDialogCostChanged = true"
                 :messages="calculateDialogCostShowWarning ? 'Тариф на текущий месяц не был установлен. Значение было выбрано на основе предыдущего периода. Будьте внимательны!' : ''"
@@ -222,12 +223,12 @@
                 placeholder="70.8"
                 v-model="calculateDialogRecord"
                 type="number"
-                :disabled="calculateDialogLoading || !tariffsDataLoaded"
+                :disabled="calculateDialogDisabled"
                 :rules="[rules.required, rules.greaterThanZero]"
             ></v-text-field>
           </v-form>
           <v-btn large block color="accent" @click="calculate"
-                 :disabled="calculateDialogLoading || !tariffsDataLoaded || !calculateDialogValid">Сгенерировать
+                 :disabled="calculateDialogDisabled || !calculateDialogValid">Сгенерировать
           </v-btn>
         </v-card-text>
       </v-card>
@@ -297,6 +298,9 @@ export default {
       ],
     },
 
+    billsAreGeneratedForCurrentPeriod: false,
+    billsDataLoaded: false,
+
     authError: false,
     connectionError: false,
     rules: {
@@ -307,6 +311,12 @@ export default {
   computed: {
     calculateDialogCostShowWarning: function() {
       return this.tariffsDataLoaded && this.nowTariff === 0 && !this.calculateDialogCostChanged
+    },
+    calculateDialogDisabled: function () {
+      return this.calculateDialogLoadingFull || this.billsAreGeneratedForCurrentPeriod
+    },
+    calculateDialogLoadingFull: function () {
+      return !this.tariffsDataLoaded || !this.billsDataLoaded || this.calculateDialogLoading
     }
   },
   methods: {
@@ -545,8 +555,6 @@ export default {
         return
       }
 
-      console.log('###tariff###')
-
       // Устанавливаем тариф
       try {
         // Получаем текущий тариф
@@ -583,8 +591,6 @@ export default {
         this.calculateDialog = false
         return
       }
-
-      console.log('###records###')
 
       // Устанавливаем record
       try {
@@ -625,8 +631,6 @@ export default {
       }
 
       // Запускаем расчет
-      // todo: обработка н=конфилката
-      console.log('###calculating###')
       try {
         await api.periodsCalculate(period.data.id)
       } catch (e) {
@@ -640,16 +644,36 @@ export default {
         this.calculateDialog = false
         return
       }
-      console.log('###doning###')
 
       this.calculateDialogLoading = false
       this.calculateDialog = false
+
+      this.bills()
     },
+    // Провеяет, выпущены ли чеки для текущего периода (нужно для блокировки окна генерации)
+    bills: async function () {
+      try {
+        const period = await api.periodsViewOrStore((new Date()).getFullYear(), (new Date()).getMonth() + 1)
+        const bills = await api.billsIndexPeriod(period.data.id)
+
+        this.billsAreGeneratedForCurrentPeriod = bills.length > 0
+        this.billsDataLoaded = true
+      } catch (e) {
+        if (e.name === "AuthError") {
+          this.authError = true
+        } else if (e.name === "ConnectionError") {
+          this.connectionError = true
+        }
+        console.error(e)
+      }
+
+    }
   },
   mounted() {
     this.residents()
     this.periods()
     this.tariffs()
+    this.bills()
   }
 
 }
