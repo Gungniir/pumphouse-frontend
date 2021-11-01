@@ -38,7 +38,9 @@
                 </v-row>
               </v-card-title>
               <v-card-subtitle style="font-size: 0.8em">
-                <div style="border-top: 1px solid #BEBEBE; padding-top: 4px; margin-top: 12px">ДАЧНИКИ ({{residents.length}})</div>
+                <div style="border-top: 1px solid #BEBEBE; padding-top: 4px; margin-top: 12px">ДАЧНИКИ
+                  ({{ residents.length }})
+                </div>
               </v-card-subtitle>
             </v-card>
           </v-col>
@@ -71,11 +73,6 @@ export default {
 
     residents: [],
     residentsLoaded: false,
-
-    rules: {
-      required: value => !!value || 'Обязательное поле',
-      greaterThanZero: value => value > 0 || 'Площадь должна быть положительной',
-    }
   }),
   computed: {},
   methods: {
