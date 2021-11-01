@@ -49,7 +49,7 @@
             </v-card>
           </v-col>
           <v-col cols="7">
-            <v-card height="250" :loading="!residentsDataLoaded">
+            <v-card height="250" :loading="!recordsDataLoaded">
               <v-card-text style="height: 100%">
                 <water-chart ref="water-chart"
                              style="height: 100%; width: 100%"
@@ -202,13 +202,20 @@
         <v-card-text class="pb-10">
           <v-form v-model="calculateDialogValid" ref="calculate-form">
             <v-text-field
+                class="mb-2"
                 label="Тариф на текущий месяц"
                 outlined
                 placeholder="44.2"
                 v-model="calculateDialogCost"
                 :disabled="calculateDialogLoading || !tariffsDataLoaded"
                 :rules="[rules.required, rules.greaterThanZero]"
-            ></v-text-field>
+                @input="calculateDialogCostChanged = true"
+                :messages="calculateDialogCostShowWarning ? 'Тариф на текущий месяц не был установлен. Значение было выбрано на основе предыдущего периода. Будьте внимательны!' : ''"
+            >
+              <template #message="{message}" v-if="!calculateDialogCostChanged">
+                <v-icon x-small color="error" left>mdi-alert-circle-outline</v-icon><span class="error--text">{{message}}</span>
+              </template>
+            </v-text-field>
             <v-text-field
                 label="Показания счётчика"
                 outlined
@@ -243,11 +250,14 @@ export default {
     residentDialogArea: 0,
     residentDialogLoading: false,
     residentDialogValid: false,
+
     calculateDialog: false,
     calculateDialogCost: 0,
+    calculateDialogCostChanged: false,
     calculateDialogRecord: 0,
     calculateDialogLoading: false,
     calculateDialogValid: false,
+
     residentsDataLoaded: false,
     residentsCount: 0,
     residentsData: {
@@ -273,6 +283,7 @@ export default {
         },
       ],
     },
+
     tariffsDataLoaded: false,
     nowTariff: 0,
     tariffsData: {
@@ -285,6 +296,7 @@ export default {
         },
       ],
     },
+
     authError: false,
     connectionError: false,
     rules: {
@@ -292,6 +304,11 @@ export default {
       greaterThanZero: value => value > 0 || 'Площадь должна быть положительной',
     }
   }),
+  computed: {
+    calculateDialogCostShowWarning: function() {
+      return this.tariffsDataLoaded && this.nowTariff === 0 && !this.calculateDialogCostChanged
+    }
+  },
   methods: {
     residents: async function () {
       const residents = await api.residentsIndex();
@@ -523,8 +540,8 @@ export default {
         } else if (e.name === 'ConnectionError') {
           this.connectionError = true
         }
-        this.residentDialogLoading = false
-        this.residentDialog = false
+        this.calculateDialogLoading = false
+        this.calculateDialog = false
         return
       }
 
@@ -540,6 +557,9 @@ export default {
           // Тариф есть. Если он отличается, нужно изменить
           if (Number(tariff.data.cost).toFixed(2) !== Number(this.calculateDialogCost).toFixed(2)) {
             await api.tariffsUpdate(tariff.data.id, Number(this.calculateDialogCost))
+
+            this.tariffsDataLoaded = false
+            this.tariffs()
           }
         } catch (e) {
           if (e.name !== 'NotFoundError') {
@@ -548,6 +568,9 @@ export default {
           }
           // Тарифа нет, нужно создать
           await api.tariffsStore(period.data.id, Number(this.calculateDialogCost))
+
+          this.tariffsDataLoaded = false
+          this.tariffs()
         }
       } catch (e) {
         console.error(e)
@@ -556,8 +579,8 @@ export default {
         } else if (e.name === 'ConnectionError') {
           this.connectionError = true
         }
-        this.residentDialogLoading = false
-        this.residentDialog = false
+        this.calculateDialogLoading = false
+        this.calculateDialog = false
         return
       }
 
@@ -574,6 +597,9 @@ export default {
           // Record есть. Если он отличается, нужно изменить
           if (Number(record.data.amount_volume).toFixed(2) !== Number(this.calculateDialogRecord).toFixed(2)) {
             await api.recordsUpdate(period.data.id, record.data.id, Number(this.calculateDialogRecord))
+
+            this.recordsDataLoaded = false
+            this.periods()
           }
         } catch (e) {
           if (e.name !== 'NotFoundError') {
@@ -582,6 +608,9 @@ export default {
           }
           // Record нет, нужно создать
           await api.recordsStore(period.data.id, Number(this.calculateDialogRecord))
+
+          this.recordsDataLoaded = false
+          this.periods()
         }
       } catch (e) {
         if (e.name === 'AuthError') {
@@ -590,8 +619,8 @@ export default {
           this.connectionError = true
         }
         console.error(e)
-        this.residentDialogLoading = false
-        this.residentDialog = false
+        this.calculateDialogLoading = false
+        this.calculateDialog = false
         return
       }
 
@@ -607,14 +636,14 @@ export default {
           this.connectionError = true
         }
         console.error(e)
-        this.residentDialogLoading = false
-        this.residentDialog = false
+        this.calculateDialogLoading = false
+        this.calculateDialog = false
         return
       }
       console.log('###doning###')
 
-      this.residentDialogLoading = false
-      this.residentDialog = false
+      this.calculateDialogLoading = false
+      this.calculateDialog = false
     },
   },
   mounted() {
