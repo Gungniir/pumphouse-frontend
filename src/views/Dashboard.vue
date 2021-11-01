@@ -8,7 +8,7 @@
               :src="require('../assets/logo-small.png')"
           />
         </div>
-        <v-btn icon large class="mb-10">
+        <v-btn icon large class="mb-10" to="/residents">
           <v-icon>mdi-account-group</v-icon>
         </v-btn>
         <v-btn icon large class="mb-10">
