@@ -27,39 +27,57 @@
 
         <v-row>
           <v-col>
-            <v-card v-if="residentLoaded" :loading="saving">
+            <v-card :loading="saving">
               <v-btn top left absolute icon to="/residents">
                 <v-icon>mdi-arrow-left</v-icon>
               </v-btn>
               <v-card-text class="pa-16">
                 <v-row class="mb-1">
                   <v-col cols="2">
-                    <v-avatar :color="resident.fio | colorFromName" width="150" height="150"
+                    <v-skeleton-loader
+                        v-if="!residentLoaded"
+                        type="image"
+                        class="rounded-circle"
+                        width="150"
+                        height="150"
+                    />
+                    <v-avatar v-else :color="resident.fio | colorFromName" width="150" height="150"
                               style="font-size: 80px; color: white">{{ resident.fio | initials }}
                     </v-avatar>
                   </v-col>
                   <v-col cols="10" class="d-flex flex-column justify-end">
                     <v-row class="flex-grow-0">
-                      <v-col class="font-weight-light" style="font-size: 32px">{{ resident.fio }}</v-col>
+                      <v-skeleton-loader
+                          v-if="!residentLoaded"
+                          type="text"
+                          width="250"
+                      />
+                      <v-col v-else class="font-weight-light" style="font-size: 32px">{{ resident.fio }}</v-col>
                     </v-row>
                     <v-row class="flex-grow-0">
                       <v-col>
                         <!--                        <v-btn>Добавить аккаунт</v-btn>-->
-                        <v-btn
-                            v-if="!editorMode"
-                            @click="editorMode = true"
-                            color="accent"
-                        >
-                          Изменить
-                        </v-btn>
-                        <v-btn
-                            v-if="editorMode"
-                            :disabled="!valid || saving"
-                            @click="save"
-                            color="red"
-                        >
-                          Сохранить изменения
-                        </v-btn>
+                        <v-skeleton-loader
+                            v-if="!residentLoaded"
+                            type="button"
+                        />
+                        <template v-else>
+                          <v-btn
+                              v-if="!editorMode"
+                              @click="editorMode = true"
+                              color="accent"
+                          >
+                            Изменить
+                          </v-btn>
+                          <v-btn
+                              v-if="editorMode"
+                              :disabled="!valid || saving"
+                              @click="save"
+                              color="red"
+                          >
+                            Сохранить изменения
+                          </v-btn>
+                        </template>
                       </v-col>
                     </v-row>
                   </v-col>
@@ -68,32 +86,50 @@
                 <v-row class="mt-10">
                   <v-col cols="4">
                     <v-form v-model="valid">
-                      <v-text-field v-model="resident.fio"
-                                    :readonly="!editorMode"
-                                    :disabled="saving"
-                                    :rules="[rules.required, rules.atLeastThreeChars]"
-                                    type="text"
-                                    outlined
-                                    label="ФИО"
+                      <v-skeleton-loader
+                        v-if="!residentLoaded"
+                        type="button"
+                        class="mb-4"
                       />
-                      <v-text-field v-model="resident.area"
-                                    :readonly="!editorMode"
-                                    :disabled="saving"
-                                    :rules="[rules.required]"
-                                    type="number"
-                                    suffix="соток"
-                                    outlined
-                                    label="Площадь огорода"
+                      <v-skeleton-loader
+                        v-if="!residentLoaded"
+                        type="button"
+                        class="mb-4"
                       />
-                      <v-text-field v-model="resident.start_date"
-                                    :readonly="!editorMode"
-                                    :disabled="saving"
-                                    :rules="[rules.required, rules.dateFormat]"
-                                    type="text"
-                                    outlined
-                                    label="Дата подключения"
-                                    hint="Формат данных: ГГГГ.ММ.ДД ЧЧ:ММ:СС"
+                      <v-skeleton-loader
+                        v-if="!residentLoaded"
+                        type="button"
+                        class="mb-4"
+                        width="100"
                       />
+                      <template v-else>
+                        <v-text-field v-model="resident.fio"
+                                      :readonly="!editorMode"
+                                      :disabled="saving"
+                                      :rules="[rules.required, rules.atLeastThreeChars]"
+                                      type="text"
+                                      outlined
+                                      label="ФИО"
+                        />
+                        <v-text-field v-model="resident.area"
+                                      :readonly="!editorMode"
+                                      :disabled="saving"
+                                      :rules="[rules.required]"
+                                      type="number"
+                                      suffix="соток"
+                                      outlined
+                                      label="Площадь огорода"
+                        />
+                        <v-text-field v-model="resident.start_date"
+                                      :readonly="!editorMode"
+                                      :disabled="saving"
+                                      :rules="[rules.required, rules.dateFormat]"
+                                      type="text"
+                                      outlined
+                                      label="Дата подключения"
+                                      hint="Формат данных: ГГГГ.ММ.ДД ЧЧ:ММ:СС"
+                        />
+                      </template>
                     </v-form>
                   </v-col>
                 </v-row>
@@ -157,7 +193,7 @@ export default {
         console.error(e)
       }
     },
-    save: async function() {
+    save: async function () {
       this.saving = true
 
       try {

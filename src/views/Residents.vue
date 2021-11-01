@@ -3,10 +3,12 @@
     <v-row class="fill-height overflow-hidden">
       <v-col cols="1" class="d-flex flex-column align-center">
         <div style="width: 100%;">
-          <v-img
-              class="mb-14"
-              :src="require('../assets/logo-small.png')"
-          />
+          <router-link to="/dashboard">
+            <v-img
+                class="mb-14"
+                :src="require('../assets/logo-small.png')"
+            />
+          </router-link>
         </div>
         <v-btn icon large class="mb-10" to="/residents">
           <v-icon>mdi-account-group</v-icon>
@@ -45,10 +47,19 @@
             </v-card>
           </v-col>
         </v-row>
-
         <v-list v-if="residentsLoaded" style="background: inherit">
           <residents-row v-for="resident of residents" :key="resident.id" :resident="resident"/>
         </v-list>
+        <v-row v-else style="height: 50vh">
+          <v-col class="fill-height d-flex justify-center align-center">
+            <v-progress-circular
+                size="100"
+                width="5"
+                indeterminate
+                color="accent"
+            />
+          </v-col>
+        </v-row>
       </v-col>
       <v-col cols="1">
         <div class="d-flex flex-column align-center fill-height">
