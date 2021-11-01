@@ -65,7 +65,8 @@ import api from "@/api";
 import ResidentsRow from "@/components/ResidentsRow";
 
 export default {
-  name: "Dashboard",
+  // todo: loading animation
+  name: "Residents",
   components: {ResidentsRow},
   data: () => ({
     authError: false,
@@ -89,7 +90,7 @@ export default {
         return
       }
 
-      this.residents = residents.data
+      this.residents = residents.data.sort((a, b) => a.fio.toLowerCase().localeCompare(b.fio.toLowerCase()))
       this.residentsLoaded = true
     }
   },

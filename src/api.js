@@ -180,6 +180,63 @@ const api = {
 
         return null
     },
+    /**
+     * Получить информацию о дачнике
+     *
+     * @param {number} residentID
+     * @throws ConnectionError|AuthError|NotFoundError
+     * @returns {Promise<{id: number, fio: string, start_date: string, area: string}>}
+     */
+    residentView: async function(residentID) {
+        const response = await doRequest(`/residents/${residentID}`, 'get')
+
+        if (response === null) {
+            throw new ConnectionError()
+        }
+
+        if (response.statusCode === 401 || response.statusCode === 403) {
+            throw new AuthError(response.statusCode)
+        }
+
+        if (response.statusCode === 404) {
+            throw new NotFoundError()
+        }
+
+        return (await response.json()).data
+    },
+    /**
+     * Обновить информацию о дачнике
+     *
+     * @param {number} residentID
+     * @param {string} fio
+     * @param {number} area
+     * @param {Date} start_date
+     * @throws ConnectionError|AuthError|NotFoundError
+     * @returns {Promise<{id: number, fio: string, start_date: string, area: string}>}
+     */
+    residentUpdate: async function(residentID, fio, area, start_date) {
+        const data = new FormData()
+        data.append('fio', fio)
+        data.append('area', area.toFixed(2))
+        data.append('start_date', formatDate(start_date))
+
+        const response = await doRequest(`/residents/${residentID}`, 'PUT', data)
+
+        if (response === null) {
+            throw new ConnectionError()
+        }
+
+        if (response.statusCode === 401 || response.statusCode === 403) {
+            throw new AuthError(response.statusCode)
+        }
+
+        if (response.statusCode === 404) {
+            throw new NotFoundError()
+        }
+
+        return (await response.json()).data
+    },
+
 
     /**
      * Получить список периодов

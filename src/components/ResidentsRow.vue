@@ -42,6 +42,7 @@
                   small
                   v-on="on"
                   v-bind="attrs"
+                  :to="`/resident/${resident.id}`"
               >
                 <v-icon>mdi-pencil</v-icon>
               </v-btn>
