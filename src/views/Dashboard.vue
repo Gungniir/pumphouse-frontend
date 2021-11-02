@@ -302,27 +302,28 @@ export default {
       let periodsWithTariff = periods.data.map(() => null)
 
       for (const period of periods.data) {
-        const index = periods.data.indexOf(period);
-        let tariff
-        try {
-          tariff = (await api.tariffsIndex(period.id)).data
-        } catch (e) {
-          if (e.name === 'AuthError') {
-            this.$store.state.authError = true
-          } else if (e.name === 'ConnectionError') {
-            this.$store.state.connectionError = true
-          } else if (e.name !== 'NotFoundError') {
-            console.error(e)
-            continue;
+        setTimeout(async (period) => {
+          const index = periods.data.indexOf(period);
+          let tariff
+          try {
+            tariff = (await api.tariffsIndex(period.id)).data
+          } catch (e) {
+            if (e.name === 'AuthError') {
+              this.$store.state.authError = true
+            } else if (e.name === 'ConnectionError') {
+              this.$store.state.connectionError = true
+            } else if (e.name !== 'NotFoundError') {
+              console.error(e)
+            }
+            tariff = {cost: 0}
           }
-          tariff = {cost: 0}
-        }
 
-        tariffsLoaded++
-        periodsWithTariff[index] = {
-          ...period,
-          tariff
-        }
+          tariffsLoaded++
+          periodsWithTariff[index] = {
+            ...period,
+            tariff
+          }
+        }, 0, period)
       }
 
       while (tariffsLoaded !== tariffsNeeded) {
