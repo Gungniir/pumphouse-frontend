@@ -14,15 +14,15 @@
         <v-btn icon large class="mb-10" to="/bills">
           <v-icon>mdi-file-document</v-icon>
         </v-btn>
-        <v-btn icon large class="mb-10">
+        <v-btn icon large class="mb-10" @click="tariffDialog = true">
           <v-icon>mdi-currency-usd</v-icon>
         </v-btn>
       </v-col>
       <v-col cols="10">
         <v-alert color="error" v-if="connectionError">Не удалось подключиться к серверу. Обновите страницу.</v-alert>
         <v-alert color="error" class="d-flex justify-space-between" v-if="authError">
-            Вы не авторизованы
-            <v-btn color="accent" to="/auth">Войти</v-btn>
+          Вы не авторизованы
+          <v-btn color="accent" to="/auth">Войти</v-btn>
         </v-alert>
         <v-row>
           <v-col cols="8">
@@ -205,7 +205,9 @@
         </v-btn>
         <v-card-title class="d-flex align-center justify-center mb-10 pt-10">Генерация чеков</v-card-title>
         <v-card-text class="pb-10">
-          <v-alert color="error" v-if="billsDataLoaded && billsAreGeneratedForCurrentPeriod">Чеки на текущий период уже сгенерированы. Чтобы продолжить, сначала удалите их.</v-alert>
+          <v-alert color="error" v-if="billsDataLoaded && billsAreGeneratedForCurrentPeriod">Чеки на текущий период уже
+            сгенерированы. Чтобы продолжить, сначала удалите их.
+          </v-alert>
           <v-form v-model="calculateDialogValid" ref="calculate-form">
             <v-text-field
                 class="mb-2"
@@ -219,7 +221,8 @@
                 :messages="calculateDialogCostShowWarning ? 'Тариф на текущий месяц не был установлен. Значение было выбрано на основе предыдущего периода. Будьте внимательны!' : ''"
             >
               <template #message="{message}" v-if="!calculateDialogCostChanged">
-                <v-icon x-small color="error" left>mdi-alert-circle-outline</v-icon><span class="error--text">{{message}}</span>
+                <v-icon x-small color="error" left>mdi-alert-circle-outline</v-icon>
+                <span class="error--text">{{ message }}</span>
               </template>
             </v-text-field>
             <v-text-field
@@ -234,6 +237,62 @@
           </v-form>
           <v-btn large block color="accent" @click="calculate"
                  :disabled="calculateDialogDisabled || !calculateDialogValid">Сгенерировать
+          </v-btn>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+    <v-dialog
+        v-model="tariffDialog"
+        width="400"
+    >
+      <v-card :loading="tariffDialogLoading">
+        <v-btn
+            absolute
+            top
+            right
+            icon
+            @click="tariffDialog = false"
+        >
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+        <v-card-title class="d-flex align-center justify-center mb-10 pt-10">Тариф</v-card-title>
+        <v-card-text class="pb-10">
+          <v-form v-model="tariffDialogValid" ref="tariff-dialog">
+            <v-menu max-width="352">
+              <template #activator="{on, attrs}">
+                <v-text-field
+                    label="Период"
+                    outlined
+                    :value="tariffDialogMonth | onlyMonth"
+                    readonly
+                    v-on="on"
+                    v-bind="attrs"
+                />
+              </template>
+              <v-date-picker
+                  v-model="tariffDialogMonth"
+                  :disabled="tariffDialogLoading"
+                  no-title
+                  type="month"
+                  locale="ru"
+                  full-width
+              />
+            </v-menu>
+            <v-text-field
+                v-model="tariffDialogCost"
+                :rules="[rules.required, rules.greaterThanZero]"
+                outlined
+                label="Тариф"
+            />
+          </v-form>
+          <v-btn
+              :disabled="tariffDialogLoading || !tariffDialogValid"
+              color="accent"
+              large
+              block
+              @click="setTariff"
+          >
+            Уставноить тариф
           </v-btn>
         </v-card-text>
       </v-card>
@@ -263,6 +322,12 @@ export default {
     calculateDialogRecord: 0,
     calculateDialogLoading: false,
     calculateDialogValid: false,
+
+    tariffDialog: false,
+    tariffDialogValid: false,
+    tariffDialogMonth: `${(new Date()).getFullYear()}-${((new Date()).getMonth() + 1)}`,
+    tariffDialogCost: 0,
+    tariffDialogLoading: false,
 
     residentsDataLoaded: false,
     residentsCount: 0,
@@ -314,7 +379,7 @@ export default {
     }
   }),
   computed: {
-    calculateDialogCostShowWarning: function() {
+    calculateDialogCostShowWarning: function () {
       return this.tariffsDataLoaded && this.nowTariff === 0 && !this.calculateDialogCostChanged
     },
     calculateDialogDisabled: function () {
@@ -322,6 +387,15 @@ export default {
     },
     calculateDialogLoadingFull: function () {
       return !this.tariffsDataLoaded || !this.billsDataLoaded || this.calculateDialogLoading
+    }
+  },
+  filters: {
+    onlyMonth: function (value) {
+      const date = new Date(value)
+
+      const months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
+
+      return `${months[date.getMonth()]} ${date.getFullYear()}`
     }
   },
   methods: {
@@ -672,6 +746,68 @@ export default {
         console.error(e)
       }
 
+    },
+    setTariff: async function () {
+      this.tariffDialogLoading = true
+
+      const year = this.tariffDialogMonth ? Number(this.tariffDialogMonth.split('-')[0]) : (new Date()).getFullYear()
+      const month = this.tariffDialogMonth ? Number(this.tariffDialogMonth.split('-')[1]) : (new Date()).getMonth() + 1
+
+      let period
+
+      try {
+        period = (await api.periodsViewOrStore(year, month)).data
+      } catch (e) {
+        if (e.name === "ConnectionError") {
+          this.connectionError = true
+        } else if (e.name === "AuthError") {
+          this.authError = true
+        }
+        console.error(e)
+        return
+      }
+
+      try {
+        await api.tariffsStore(period.id, Number(this.tariffDialogCost))
+        // Успешно создано
+        this.tariffDialog = false
+        this.tariffDialogLoading = false
+        this.$refs['tariff-dialog'].reset()
+        this.tariffDialogMonth = `${(new Date()).getFullYear()}-${((new Date()).getMonth() + 1)}`
+        this.tariffsDataLoaded = false
+        this.tariffs()
+        return
+      } catch (e) {
+        if (e.name === "ConnectionError") {
+          this.connectionError = true
+        } else if (e.name === "AuthError") {
+          this.authError = true
+        } else if (e.name !== "ConflictError") {
+          console.error(e)
+          return
+        }
+      }
+
+      // Произошёл конфликт => Обновляем
+      try {
+        const tariff = (await api.tariffsIndex(period.id)).data
+        await api.tariffsUpdate(tariff.id, Number(this.tariffDialogCost))
+
+        // Всё успешно
+        this.tariffDialog = false
+        this.tariffDialogLoading = false
+        this.$refs['tariff-dialog'].reset()
+        this.tariffDialogMonth = `${(new Date()).getFullYear()}-${((new Date()).getMonth() + 1)}`
+        this.tariffsDataLoaded = false
+        this.tariffs()
+      } catch (e) {
+        if (e.name === "ConnectionError") {
+          this.connectionError = true
+        } else if (e.name === "AuthError") {
+          this.authError = true
+          console.error(e)
+        }
+      }
     }
   },
   mounted() {
