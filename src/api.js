@@ -624,8 +624,9 @@ const api = {
         return await response.json()
     },
     /**
-     * Получить все выпущенные чеки
+     * Получить все выпущенные чеки за конкретный период
      *
+     * @param {Number} periodID
      * @throws ConnectionError|AuthError|NotFoundError
      * @returns {Promise<{id: Number, resident_id: Number, period_id: Number, amount_rub: Number}[]>}
      */
@@ -646,6 +647,30 @@ const api = {
 
         return (await response.json()).data
     },
+    /**
+     * Удалить чек
+     *
+     * @throws ConflictError|AuthError|NotFoundError
+     * @param {Number} billID
+     * @returns {Promise<boolean>}
+     */
+    billsDestroy: async function(billID) {
+        const response = await doRequest(`/bills/${billID}`, 'delete')
+
+        if (response === null) {
+            throw new ConnectionError()
+        }
+
+        if (response.statusCode === 401 || response.statusCode === 403) {
+            throw new AuthError()
+        }
+
+        if (response.statusCode === 404) {
+            throw new NotFoundError()
+        }
+
+        return true
+    }
 }
 
 export default api;
