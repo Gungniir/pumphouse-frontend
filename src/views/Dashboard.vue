@@ -113,13 +113,13 @@ export default {
     },
   }),
   computed: {
-    updateTariffs: function() {
+    updateTariffs: function () {
       return this.$store.state.updateTariffs
     },
-    updateResidents: function() {
+    updateResidents: function () {
       return this.$store.state.updateResidents
     },
-    updateRecords: function() {
+    updateRecords: function () {
       return this.$store.state.updateRecords
     },
   },
@@ -288,26 +288,51 @@ export default {
         }
       }
 
-      for (const period of periods.data) { // TODO: Переписать на асинхронную обработку
+      let tariffsLoaded = 0
+      const tariffsNeeded = periods.data.length
+
+      async function wait(millis) {
+        return new Promise(resolve => {
+          setTimeout(() => {
+            resolve()
+          }, millis)
+        })
+      }
+
+      let periodsWithTariff = periods.data.map(() => null)
+
+      for (const period of periods.data) {
+        const index = periods.data.indexOf(period);
         let tariff
         try {
-          tariff = await api.tariffsIndex(period.id)
+          tariff = (await api.tariffsIndex(period.id)).data
         } catch (e) {
           if (e.name === 'AuthError') {
             this.$store.state.authError = true
           } else if (e.name === 'ConnectionError') {
             this.$store.state.connectionError = true
-          } else if (e.name === 'NotFoundError') {
-            period.tariff = {cost: 0}
-            continue
+          } else if (e.name !== 'NotFoundError') {
+            console.error(e)
+            continue;
           }
-          return
+          tariff = {cost: 0}
         }
 
-        period.tariff = tariff.data
+        tariffsLoaded++
+        periodsWithTariff[index] = {
+          ...period,
+          tariff
+        }
       }
 
-      for (const {begin_date, tariff} of periods.data) {
+      while (tariffsLoaded !== tariffsNeeded) {
+        console.log(tariffsLoaded, tariffsNeeded)
+        await wait(200)
+      }
+
+      console.log(periodsWithTariff)
+
+      for (const {begin_date, tariff} of periodsWithTariff) {
         const date = new Date(begin_date)
 
         if (date.getFullYear() === nowYear && date.getMonth() === nowMonth) {
