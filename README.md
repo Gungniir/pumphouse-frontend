@@ -17,6 +17,8 @@
 docker-compose up -d # Запуск приложения
 ```
 
+Система будет запущена на http://localhost:8080
+
 ## License
 
 The project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
