@@ -103,8 +103,10 @@ export default {
         // Успешно создано
         this.$emit('close')
         this.tariffDialogLoading = false
-        this.$refs['tariff-dialog'].reset()
         this.tariffDialogMonth = `${(new Date()).getFullYear()}-${((new Date()).getMonth() + 1)}`
+        this.tariffDialogCost = 0
+        this.$refs['tariff-dialog'].resetValidation()
+        this.$store.state.updateTariffs = true
         return
       } catch (e) {
         if (e.name === "ConnectionError") {
@@ -125,8 +127,10 @@ export default {
         // Всё успешно
         this.$emit('close')
         this.tariffDialogLoading = false
-        this.$refs['tariff-dialog'].reset()
         this.tariffDialogMonth = `${(new Date()).getFullYear()}-${((new Date()).getMonth() + 1)}`
+        this.tariffDialogCost = 0
+        this.$refs['tariff-dialog'].resetValidation()
+        this.$store.state.updateTariffs = true
       } catch (e) {
         if (e.name === "ConnectionError") {
           this.connectionError = true

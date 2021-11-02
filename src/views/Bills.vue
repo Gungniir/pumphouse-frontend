@@ -104,7 +104,10 @@ export default {
         resident,
         bill: this.bills.find(({resident_id}) => resident_id === resident.id)
       })).filter(({bill}) => !!bill)
-    }
+    },
+    updateBills: function() {
+      return this.$store.state.updateBills
+    },
   },
   methods: {
     loadPeriod: async function () {
@@ -174,6 +177,24 @@ export default {
       }
       console.error(e)
     }
+  },
+  watch: {
+    updateBills: function (value) {
+      if (!value) return
+      this.$store.state.updateBills = false
+
+      this.periodLoaded = false
+      this.residentsLoaded = false
+      this.billsLoaded = false
+
+      this.loadPeriod().then(() => {
+        this.loadBills()
+      })
+      this.loadResidents()
+    },
+  },
+  beforeCreate() {
+    this.$store.commit('resetUpdates')
   },
   mounted() {
     this.loadPeriod().then(() => {

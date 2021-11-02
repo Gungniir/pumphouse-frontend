@@ -65,7 +65,12 @@ export default {
         this.$store.state.authError = true
       }
 
-      this.$refs["resident-form"].reset()
+      this.fio = ""
+      this.area = 0
+      this.$refs["resident-form"].resetValidation()
+
+      this.$store.state.updateResidents = true
+
       this.loading = false
       this.$emit('close')
     },

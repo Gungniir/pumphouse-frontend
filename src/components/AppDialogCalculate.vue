@@ -111,6 +111,7 @@ export default {
           // Тариф есть. Если он отличается, нужно изменить
           if (Number(tariff.data.cost).toFixed(2) !== Number(this.calculateDialogCost).toFixed(2)) {
             await api.tariffsUpdate(tariff.data.id, Number(this.calculateDialogCost))
+            this.$store.state.updateTariffs = true
           }
         } catch (e) {
           if (e.name !== 'NotFoundError') {
@@ -119,6 +120,7 @@ export default {
           }
           // Тарифа нет, нужно создать
           await api.tariffsStore(period.data.id, Number(this.calculateDialogCost))
+          this.$store.state.updateTariffs = true
         }
       } catch (e) {
         console.error(e)
@@ -143,6 +145,7 @@ export default {
           // Record есть. Если он отличается, нужно изменить
           if (Number(record.data.amount_volume).toFixed(2) !== Number(this.calculateDialogRecord).toFixed(2)) {
             await api.recordsUpdate(period.data.id, record.data.id, Number(this.calculateDialogRecord))
+            this.$store.state.updateRecords = true
           }
         } catch (e) {
           if (e.name !== 'NotFoundError') {
@@ -151,6 +154,7 @@ export default {
           }
           // Record нет, нужно создать
           await api.recordsStore(period.data.id, Number(this.calculateDialogRecord))
+          this.$store.state.updateRecords = true
         }
       } catch (e) {
         if (e.name === 'AuthError') {
@@ -179,6 +183,7 @@ export default {
         return
       }
 
+      this.$store.state.updateBills = true
       this.calculateDialogLoading = false
       this.$emit('close')
     },

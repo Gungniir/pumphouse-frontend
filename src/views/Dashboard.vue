@@ -112,6 +112,40 @@ export default {
       ],
     },
   }),
+  computed: {
+    updateTariffs: function() {
+      return this.$store.state.updateTariffs
+    },
+    updateResidents: function() {
+      return this.$store.state.updateResidents
+    },
+    updateRecords: function() {
+      return this.$store.state.updateRecords
+    },
+  },
+  watch: {
+    updateTariffs: function (value) {
+      if (!value) return
+      this.$store.state.updateTariffs = false
+
+      this.tariffsDataLoaded = false
+      this.tariffs()
+    },
+    updateResidents: function (value) {
+      if (!value) return
+      this.$store.state.updateResidents = false
+
+      this.residentsDataLoaded = false
+      this.residents()
+    },
+    updateRecords: function (value) {
+      if (!value) return
+      this.$store.state.updateRecords = false
+
+      this.recordsDataLoaded = false
+      this.periods()
+    },
+  },
   methods: {
     residents: async function () {
       const residents = await api.residentsIndex();
@@ -312,6 +346,9 @@ export default {
         this.calculateDialogCost = this.nowTariff
       }
     },
+  },
+  beforeCreate() {
+    this.$store.commit('resetUpdates')
   },
   mounted() {
     this.residents()

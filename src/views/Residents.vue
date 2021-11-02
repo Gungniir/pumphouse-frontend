@@ -69,6 +69,23 @@ export default {
       this.residentsLoaded = true
     }
   },
+  computed: {
+    updateResidents: function() {
+      return this.$store.state.updateResidents
+    },
+  },
+  watch: {
+    updateResidents: function (value) {
+      if (!value) return
+      this.$store.state.updateResidents = false
+
+      this.residentsLoaded = false
+      this.loadResidents()
+    },
+  },
+  beforeCreate() {
+    this.$store.commit('resetUpdates')
+  },
   mounted() {
     this.loadResidents()
   }
