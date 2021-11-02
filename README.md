@@ -1,24 +1,14 @@
-# pumphouse-frontend
+<p align="center"><img src="https://github.com/Gungniir/pumphouse-backend/blob/57b34bf7874c6f0b15bf944c980db96ac3f52268/public/Logo.png" width="400" alt="Логотип"></p>
 
-## Project setup
-```
-npm install
-```
+## Система Водокачка+ (Fronend)
+Данная система была разработана в качестве тестового задания.
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
+### Запуск
 
-### Compiles and minifies for production
-```
-npm run build
+```shell 
+docker-compose up -d # Запуск приложения
 ```
 
-### Lints and fixes files
-```
-npm run lint
-```
+## License
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+The project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
