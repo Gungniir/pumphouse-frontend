@@ -1,80 +1,55 @@
 <template>
-  <v-container fluid class="fill-height">
-    <v-row class="fill-height overflow-hidden">
-      <v-col cols="1" class="d-flex flex-column align-center">
-        <div style="width: 100%;">
-          <router-link to="/dashboard">
-            <v-img
-                class="mb-14"
-                :src="require('../assets/logo-small.png')"
-            />
-          </router-link>
-        </div>
-        <v-btn icon large class="mb-10" to="/residents">
-          <v-icon>mdi-account-group</v-icon>
-        </v-btn>
-        <v-btn icon large class="mb-10" to="/bills">
-          <v-icon>mdi-file-document</v-icon>
-        </v-btn>
-        <v-btn icon large class="mb-10">
-          <v-icon>mdi-currency-usd</v-icon>
-        </v-btn>
+  <v-container fluid>
+    <v-row>
+      <v-col>
+        <v-card>
+          <v-card-title>
+            <v-row>
+              <v-col>ФИО</v-col>
+              <div class="pl-14"/>
+              <v-menu
+                  v-model="monthDialogOpened"
+                  offset-y
+                  :close-on-content-click="false"
+                  max-width="300"
+              >
+                <template #activator="{on, attrs}">
+                  <v-col align="center">
+                    Месяц
+                    <v-btn icon x-small v-on="on" v-bind="attrs">
+                      <v-icon>mdi-chevron-down</v-icon>
+                    </v-btn>
+
+                  </v-col>
+                </template>
+                <v-card>
+                  <v-card-text>
+                    <v-form>
+                      <v-date-picker
+                          v-model="picker"
+                          @input="selectNewPeriod"
+                          type="month"
+                          full-width
+                          locale="ru"
+                      />
+                    </v-form>
+                  </v-card-text>
+                </v-card>
+              </v-menu>
+              <v-col align="center">Итог в рублях</v-col>
+            </v-row>
+          </v-card-title>
+          <v-card-subtitle style="font-size: 0.8em">
+            <div style="border-top: 1px solid #BEBEBE; padding-top: 4px; margin-top: 12px">ЧЕКИ
+              ({{ residentsWithBill.length }})
+            </div>
+          </v-card-subtitle>
+        </v-card>
       </v-col>
-      <v-col cols="10">
-        <v-alert color="error" v-if="connectionError">Не удалось подключиться к серверу. Обновите страницу.</v-alert>
-        <v-alert color="error" class="d-flex justify-space-between" v-if="authError">
-          Вы не авторизованы
-          <v-btn color="accent" to="/auth">Войти</v-btn>
-        </v-alert>
-
-        <v-row>
-          <v-col>
-            <v-card>
-              <v-card-title>
-                <v-row>
-                  <v-col>ФИО</v-col>
-                  <div class="pl-14"/>
-                  <v-menu
-                      v-model="monthDialogOpened"
-                      offset-y
-                      :close-on-content-click="false"
-                      max-width="300"
-                  >
-                    <template #activator="{on, attrs}">
-                      <v-col align="center">
-                        Месяц
-                        <v-btn icon x-small v-on="on" v-bind="attrs">
-                          <v-icon>mdi-chevron-down</v-icon>
-                        </v-btn>
-
-                      </v-col>
-                    </template>
-                    <v-card>
-                      <v-card-text>
-                        <v-form>
-                          <v-date-picker
-                              v-model="picker"
-                              @input="selectNewPeriod"
-                              type="month"
-                              full-width
-                              locale="ru"
-                          />
-                        </v-form>
-                      </v-card-text>
-                    </v-card>
-                  </v-menu>
-                  <v-col align="center">Итог в рублях</v-col>
-                </v-row>
-              </v-card-title>
-              <v-card-subtitle style="font-size: 0.8em">
-                <div style="border-top: 1px solid #BEBEBE; padding-top: 4px; margin-top: 12px">ЧЕКИ
-                  ({{ residentsWithBill.length }})
-                </div>
-              </v-card-subtitle>
-            </v-card>
-          </v-col>
-        </v-row>
-        <v-list v-if="billsLoaded && residentsLoaded" style="background: inherit">
+    </v-row>
+    <v-row v-if="billsLoaded && residentsLoaded">
+      <v-col>
+        <v-list style="background: inherit">
           <bills-row
               v-for="residentWithBill of residentsWithBill"
               :key="residentWithBill.bill.id"
@@ -85,22 +60,16 @@
               @error="processError"
           />
         </v-list>
-        <v-row v-else style="height: 50vh">
-          <v-col class="fill-height d-flex justify-center align-center">
-            <v-progress-circular
-                size="100"
-                width="5"
-                indeterminate
-                color="accent"
-            />
-          </v-col>
-        </v-row>
       </v-col>
-      <v-col cols="1">
-        <div class="d-flex flex-column align-center fill-height">
-          <v-icon x-large color="accent">mdi-account-circle</v-icon>
-          <span style="font-size: 13px">Администратор</span>
-        </div>
+    </v-row>
+    <v-row v-else style="height: 50vh">
+      <v-col class="fill-height d-flex justify-center align-center">
+        <v-progress-circular
+            size="100"
+            width="5"
+            indeterminate
+            color="accent"
+        />
       </v-col>
     </v-row>
   </v-container>
@@ -147,9 +116,9 @@ export default {
         this.period = periodResponse.data
       } catch (e) {
         if (e.name === "ConnectionError") {
-          this.connectionError = true
+          this.$store.state.connectionError = true
         } else if (e.name === "AuthError") {
-          this.authError = true
+          this.$store.state.authError = true
         }
         console.error(e)
       }
@@ -160,9 +129,9 @@ export default {
         this.billsLoaded = true
       } catch (e) {
         if (e.name === "ConnectionError") {
-          this.connectionError = true
+          this.$store.state.connectionError = true
         } else if (e.name === "AuthError") {
-          this.authError = true
+          this.$store.state.authError = true
         }
         console.error(e)
       }
@@ -171,12 +140,12 @@ export default {
       const residents = await api.residentsIndex();
 
       if (residents === null) {
-        this.connectionError = true
+        this.$store.state.connectionError = true
         return
       }
 
       if (residents === false) {
-        this.authError = true
+        this.$store.state.authError = true
         return
       }
 
@@ -199,9 +168,9 @@ export default {
     },
     processError: function (e) {
       if (e.name === "ConnectionError") {
-        this.connectionError = true
+        this.$store.state.connectionError = true
       } else if (e.name === "AuthError") {
-        this.authError = true
+        this.$store.state.authError = true
       }
       console.error(e)
     }

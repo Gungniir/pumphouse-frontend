@@ -1,148 +1,114 @@
 <template>
-  <v-container fluid class="fill-height">
-    <v-row class="fill-height overflow-hidden">
-      <v-col cols="1" class="d-flex flex-column align-center">
-        <div style="width: 100%;">
-          <v-img
-              class="mb-14"
-              :src="require('../assets/logo-small.png')"
-          />
-        </div>
-        <v-btn icon large class="mb-10" to="/residents">
-          <v-icon>mdi-account-group</v-icon>
-        </v-btn>
-        <v-btn icon large class="mb-10">
-          <v-icon>mdi-file-document</v-icon>
-        </v-btn>
-        <v-btn icon large class="mb-10">
-          <v-icon>mdi-currency-usd</v-icon>
-        </v-btn>
-      </v-col>
-      <v-col cols="10">
-        <v-alert color="error" v-if="connectionError">Не удалось подключиться к серверу. Обновите страницу.</v-alert>
-        <v-alert color="error" class="d-flex justify-space-between" v-if="authError">
-          Вы не авторизованы
-          <v-btn color="accent" to="/auth">Войти</v-btn>
-        </v-alert>
-
-        <v-row>
-          <v-col>
-            <v-card :loading="saving">
-              <v-btn top left absolute icon to="/residents">
-                <v-icon>mdi-arrow-left</v-icon>
-              </v-btn>
-              <v-card-text class="pa-16">
-                <v-row class="mb-1">
-                  <v-col cols="2">
+  <v-container fluid>
+    <v-row>
+      <v-col>
+        <v-card :loading="saving">
+          <v-btn top left absolute icon to="/residents">
+            <v-icon>mdi-arrow-left</v-icon>
+          </v-btn>
+          <v-card-text class="pa-16">
+            <v-row class="mb-1">
+              <v-col cols="2">
+                <v-skeleton-loader
+                    v-if="!residentLoaded"
+                    type="image"
+                    class="rounded-circle"
+                    width="150"
+                    height="150"
+                />
+                <v-avatar v-else :color="resident.fio | colorFromName" width="150" height="150"
+                          style="font-size: 80px; color: white">{{ resident.fio | initials }}
+                </v-avatar>
+              </v-col>
+              <v-col cols="10" class="d-flex flex-column justify-end">
+                <v-row class="flex-grow-0">
+                  <v-skeleton-loader
+                      v-if="!residentLoaded"
+                      type="text"
+                      width="250"
+                  />
+                  <v-col v-else class="font-weight-light" style="font-size: 32px">{{ resident.fio }}</v-col>
+                </v-row>
+                <v-row class="flex-grow-0">
+                  <v-col>
                     <v-skeleton-loader
                         v-if="!residentLoaded"
-                        type="image"
-                        class="rounded-circle"
-                        width="150"
-                        height="150"
+                        type="button"
                     />
-                    <v-avatar v-else :color="resident.fio | colorFromName" width="150" height="150"
-                              style="font-size: 80px; color: white">{{ resident.fio | initials }}
-                    </v-avatar>
-                  </v-col>
-                  <v-col cols="10" class="d-flex flex-column justify-end">
-                    <v-row class="flex-grow-0">
-                      <v-skeleton-loader
-                          v-if="!residentLoaded"
-                          type="text"
-                          width="250"
-                      />
-                      <v-col v-else class="font-weight-light" style="font-size: 32px">{{ resident.fio }}</v-col>
-                    </v-row>
-                    <v-row class="flex-grow-0">
-                      <v-col>
-                        <!--                        <v-btn>Добавить аккаунт</v-btn>-->
-                        <v-skeleton-loader
-                            v-if="!residentLoaded"
-                            type="button"
-                        />
-                        <template v-else>
-                          <v-btn
-                              v-if="!editorMode"
-                              @click="editorMode = true"
-                              color="accent"
-                          >
-                            Изменить
-                          </v-btn>
-                          <v-btn
-                              v-if="editorMode"
-                              :disabled="!valid || saving"
-                              @click="save"
-                              color="red"
-                          >
-                            Сохранить изменения
-                          </v-btn>
-                        </template>
-                      </v-col>
-                    </v-row>
+                    <template v-else>
+                      <v-btn
+                          v-if="!editorMode"
+                          @click="editorMode = true"
+                          color="accent"
+                      >
+                        Изменить
+                      </v-btn>
+                      <v-btn
+                          v-if="editorMode"
+                          :disabled="!valid || saving"
+                          @click="save"
+                          color="red"
+                      >
+                        Сохранить изменения
+                      </v-btn>
+                    </template>
                   </v-col>
                 </v-row>
-                <v-row style="height: 1px; background: #BEBEBE"/>
-                <v-row class="mt-10">
-                  <v-col cols="4">
-                    <v-form v-model="valid">
-                      <v-skeleton-loader
-                        v-if="!residentLoaded"
-                        type="button"
-                        class="mb-4"
-                      />
-                      <v-skeleton-loader
-                        v-if="!residentLoaded"
-                        type="button"
-                        class="mb-4"
-                      />
-                      <v-skeleton-loader
-                        v-if="!residentLoaded"
-                        type="button"
-                        class="mb-4"
-                        width="100"
-                      />
-                      <template v-else>
-                        <v-text-field v-model="resident.fio"
-                                      :readonly="!editorMode"
-                                      :disabled="saving"
-                                      :rules="[rules.required, rules.atLeastThreeChars]"
-                                      type="text"
-                                      outlined
-                                      label="ФИО"
-                        />
-                        <v-text-field v-model="resident.area"
-                                      :readonly="!editorMode"
-                                      :disabled="saving"
-                                      :rules="[rules.required]"
-                                      type="number"
-                                      suffix="соток"
-                                      outlined
-                                      label="Площадь огорода"
-                        />
-                        <v-text-field v-model="resident.start_date"
-                                      :readonly="!editorMode"
-                                      :disabled="saving"
-                                      :rules="[rules.required, rules.dateFormat]"
-                                      type="text"
-                                      outlined
-                                      label="Дата подключения"
-                                      hint="Формат данных: ГГГГ.ММ.ДД ЧЧ:ММ:СС"
-                        />
-                      </template>
-                    </v-form>
-                  </v-col>
-                </v-row>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-      </v-col>
-      <v-col cols="1">
-        <div class="d-flex flex-column align-center fill-height">
-          <v-icon x-large color="accent">mdi-account-circle</v-icon>
-          <span style="font-size: 13px">Администратор</span>
-        </div>
+              </v-col>
+            </v-row>
+            <v-row style="height: 1px; background: #BEBEBE"/>
+            <v-row class="mt-10">
+              <v-col cols="4">
+                <v-form v-model="valid">
+                  <v-skeleton-loader
+                      v-if="!residentLoaded"
+                      type="button"
+                      class="mb-4"
+                  />
+                  <v-skeleton-loader
+                      v-if="!residentLoaded"
+                      type="button"
+                      class="mb-4"
+                  />
+                  <v-skeleton-loader
+                      v-if="!residentLoaded"
+                      type="button"
+                      class="mb-4"
+                      width="100"
+                  />
+                  <template v-else>
+                    <v-text-field v-model="resident.fio"
+                                  :readonly="!editorMode"
+                                  :disabled="saving"
+                                  :rules="[rules.required, rules.atLeastThreeChars]"
+                                  type="text"
+                                  outlined
+                                  label="ФИО"
+                    />
+                    <v-text-field v-model="resident.area"
+                                  :readonly="!editorMode"
+                                  :disabled="saving"
+                                  :rules="[rules.required]"
+                                  type="number"
+                                  suffix="соток"
+                                  outlined
+                                  label="Площадь огорода"
+                    />
+                    <v-text-field v-model="resident.start_date"
+                                  :readonly="!editorMode"
+                                  :disabled="saving"
+                                  :rules="[rules.required, rules.dateFormat]"
+                                  type="text"
+                                  outlined
+                                  label="Дата подключения"
+                                  hint="Формат данных: ГГГГ.ММ.ДД ЧЧ:ММ:СС"
+                    />
+                  </template>
+                </v-form>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
       </v-col>
     </v-row>
   </v-container>
@@ -154,9 +120,6 @@ import api from "@/api";
 export default {
   name: "Resident",
   data: () => ({
-    authError: false,
-    connectionError: false,
-
     resident: {},
     residentLoaded: false,
 
@@ -178,7 +141,6 @@ export default {
       required: true
     }
   },
-  computed: {},
   methods: {
     loadResident: async function () {
       try {
@@ -186,9 +148,9 @@ export default {
         this.residentLoaded = true
       } catch (e) {
         if (e.name === "ConnectionError") {
-          this.connectionError = true
+          this.$store.state.connectionError = true
         } else if (e.name === "AuthError") {
-          this.authError = true
+          this.$store.state.authError = true
         }
         console.error(e)
       }
@@ -200,9 +162,9 @@ export default {
         await api.residentUpdate(Number(this.resident.id), this.resident.fio, Number(this.resident.area), new Date(this.resident.start_date))
       } catch (e) {
         if (e.name === "ConnectionError") {
-          this.connectionError = true
+          this.$store.state.connectionError = true
         } else if (e.name === "AuthError") {
-          this.authError = true
+          this.$store.state.authError = true
         }
         console.error(e)
       }
