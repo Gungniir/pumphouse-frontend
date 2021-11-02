@@ -75,8 +75,15 @@
           </v-col>
         </v-row>
         <v-list v-if="billsLoaded && residentsLoaded" style="background: inherit">
-          <bills-row v-for="residentWithBill of residentsWithBill" :key="residentWithBill.bill.id"
-                     :bill="residentWithBill.bill" :resident="residentWithBill.resident" :period="period"/>
+          <bills-row
+              v-for="residentWithBill of residentsWithBill"
+              :key="residentWithBill.bill.id"
+              :bill="residentWithBill.bill"
+              :resident="residentWithBill.resident"
+              :period="period"
+              @reload="reload"
+              @error="processError"
+          />
         </v-list>
         <v-row v-else style="height: 50vh">
           <v-col class="fill-height d-flex justify-center align-center">
@@ -176,7 +183,7 @@ export default {
       this.residents = residents.data.sort((a, b) => a.fio.toLowerCase().localeCompare(b.fio.toLowerCase()))
       this.residentsLoaded = true
     },
-    selectNewPeriod: function() {
+    selectNewPeriod: function () {
       this.monthDialogOpened = false
       this.residentsLoaded = false
       this.periodLoaded = false
@@ -186,6 +193,17 @@ export default {
         this.loadBills()
       })
       this.loadResidents()
+    },
+    reload: function () {
+      this.selectNewPeriod()
+    },
+    processError: function (e) {
+      if (e.name === "ConnectionError") {
+        this.connectionError = true
+      } else if (e.name === "AuthError") {
+        this.authError = true
+      }
+      console.error(e)
     }
   },
   mounted() {

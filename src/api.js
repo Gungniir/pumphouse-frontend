@@ -670,6 +670,30 @@ const api = {
         }
 
         return true
+    },
+    /**
+     * Удалить чеки за период
+     *
+     * @throws ConflictError|AuthError|NotFoundError
+     * @param {Number} periodID
+     * @returns {Promise<boolean>}
+     */
+    billsDestroyAllPeriod: async function(periodID) {
+        const response = await doRequest(`/periods/${periodID}/bills`, 'delete')
+
+        if (response === null) {
+            throw new ConnectionError()
+        }
+
+        if (response.statusCode === 401 || response.statusCode === 403) {
+            throw new AuthError()
+        }
+
+        if (response.statusCode === 404) {
+            throw new NotFoundError()
+        }
+
+        return true
     }
 }
 
