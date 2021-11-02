@@ -449,30 +449,6 @@ const api = {
 
         return await response.json()
     },
-    /**
-     * Удалить тариф на период
-     *
-     * @param {Number} tariffID
-     * @throws AuthError|ConnectionError|NotFoundError
-     * @returns {Promise<true>}
-     */
-    tariffsDestroy: async function(tariffID) {
-        const response = await doRequest(`/tariffs/${tariffID}`, 'delete')
-
-        if (response === null) {
-            throw new ConnectionError()
-        }
-
-        if (response.status === 401 || response.status === 403) {
-            throw new AuthError()
-        }
-
-        if (response.status === 404) {
-            throw new NotFoundError()
-        }
-
-        return true
-    },
 
     /**
      * Получить список records
