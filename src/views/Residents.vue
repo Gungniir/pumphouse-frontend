@@ -9,7 +9,7 @@
               <div class="pl-14"/>
               <v-col align="center">Дата подключения</v-col>
               <v-col align="center">Площадь участка (в сотках)</v-col>
-              <div style="padding-left: 60px"/>
+              <div style="width: 32px"/>
             </v-row>
           </v-card-title>
           <v-card-subtitle style="font-size: 0.8em">

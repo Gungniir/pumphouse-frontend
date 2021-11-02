@@ -29,19 +29,6 @@
                   class="mr-1"
                   v-on="on"
                   v-bind="attrs"
-              >
-                <v-icon>mdi-plus</v-icon>
-              </v-btn>
-            </template>
-            <span>Добавить аккаунт</span>
-          </v-tooltip>
-          <v-tooltip bottom>
-            <template #activator="{attrs, on}">
-              <v-btn
-                  icon
-                  small
-                  v-on="on"
-                  v-bind="attrs"
                   :to="`/resident/${resident.id}`"
               >
                 <v-icon>mdi-pencil</v-icon>
@@ -50,7 +37,7 @@
             <span>Редактровать дачника</span>
           </v-tooltip>
         </template>
-        <div v-else style="padding-left: 60px"/>
+        <div v-else style="padding-left: 32px"/>
       </v-list-item-action-text>
     </v-list-item-action>
   </v-list-item>

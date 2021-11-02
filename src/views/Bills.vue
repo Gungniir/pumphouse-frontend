@@ -37,6 +37,7 @@
                 </v-card>
               </v-menu>
               <v-col align="center">Итог в рублях</v-col>
+              <div style="width: 32px"/>
             </v-row>
           </v-card-title>
           <v-card-subtitle style="font-size: 0.8em">
